@@ -1,15 +1,13 @@
 class TaskModel {
-  String word = '';
-  String meaning = '';
-  String example = '';
+  int id = 0;
+  String title = '';
 
-  TaskModel({required this.word, required this.meaning, required this.example});
+  TaskModel({required this.id, required this.title});
 
   factory TaskModel.fromJson(Map<String, dynamic>json) {
     return TaskModel(
-      word: json['word'],
-      meaning: json['meaning'],
-      example: json['example'],
+      id: json['id'],
+      title: json['title'],
     );
   }
 }
