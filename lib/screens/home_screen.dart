@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_3/screens/word_list_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_application_3/screens/quiz_words.dart';
 //import 'word_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -59,7 +60,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icons.quiz, color: Colors.grey,
                 ),
                 onPressed: () {
-
+                  Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const QuizWords(source: QuizSource.demo),
+                        ), 
+                      );
                 },
               ),
               IconButton(
@@ -90,7 +96,42 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'ddd'
+                'Rapid procedures',
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 16.h),
+              ListTile(
+                leading: Icon(
+                  Icons.add_circle, color: Colors.indigo,
+                ),
+                title: Text(
+                  'Add a new word quickly'
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const WordsListScreen()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.quiz, color: Colors.teal,
+                ),
+                title: Text(
+                  'Start a quick test'
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const QuizWords(source: QuizSource.demo),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -99,4 +140,68 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-     
+
+class HomeDashboardContent extends StatelessWidget {
+  const HomeDashboardContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Refresh Your Mind 🧠',
+          style: TextStyle(
+            fontSize: 20.sp,
+            color: Colors.indigo,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: const Color.fromARGB(255, 191, 205, 212),
+        elevation: 4.h,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16.r)),
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.r),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: EdgeInsets.all(20.r),
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: Colors.indigo.shade100),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Welcome',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo.shade900,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'Learn, Practice\nTake on challenges every day',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
