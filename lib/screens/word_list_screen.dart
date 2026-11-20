@@ -5,12 +5,7 @@ import 'package:flutter_application_3/models/task_model.dart';
 class WordsListScreen extends StatefulWidget {
   const WordsListScreen({super.key});
 
-  @override
-  State<WordsListScreen> createState() => _WordsListScreenState();
-}
-
-class _WordsListScreenState extends State<WordsListScreen> {
-  final List<TaskModel> wordList = [
+  static final List<TaskModel> dictionaryWords = [
     TaskModel(
       word: 'Short',
       meaning: 'small in length, height, or duration (time), or not having enough of something',
@@ -19,8 +14,33 @@ class _WordsListScreenState extends State<WordsListScreen> {
   ];
 
   @override
+  State<WordsListScreen> createState() => _WordsListScreenState();
+}
+
+class _WordsListScreenState extends State<WordsListScreen> {
+  List<TaskModel> get wordList => WordsListScreen.dictionaryWords;
+
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filteredWords = _searchQuery.isEmpty
+        ? wordList
+        : wordList.where((item) {
+            return item.word.toLowerCase().contains(_searchQuery) ||
+                item.meaning.toLowerCase().contains(_searchQuery) ||
+                item.translation.toLowerCase().contains(_searchQuery);
+          }).toList();
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(
           'My dictionary 📖',
@@ -37,66 +57,122 @@ class _WordsListScreenState extends State<WordsListScreen> {
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(16.r)),
         ),
       ),
-      body: ListView.builder(
-        itemCount: wordList.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.indigo.shade100,
-              child: Text(
-                '${index + 1}',
-                style: TextStyle(
-                  color: Colors.indigo.shade900,
-                  fontWeight: FontWeight.bold,
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(12.w),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) =>
+                  setState(() => _searchQuery = value.trim().toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Search word, meaning, or translation...',
+                hintStyle: TextStyle(
+                  color: const Color.fromARGB(255, 117, 117, 117),
+                  fontSize: 13.sp,
+                ),
+                prefixIcon: Icon(Icons.search, color: Colors.indigo),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: Colors.indigo),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color.fromARGB(255, 210, 215, 241),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 12.h,
+                  horizontal: 14.w,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                  borderSide: BorderSide(
+                    color: Colors.indigo.shade200,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                  borderSide: BorderSide(color: Colors.indigo, width: 1.8),
                 ),
               ),
             ),
-            title: Text(
-              wordList[index].word.toString(),
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(wordList[index].meaning),
-                SizedBox(height: 2),
-                Text(wordList[index].translation),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => _showEditDialog(index),
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _showDeleteDialog(index),
-                ),
-              ],
-            ),
-          );
-        },
+          ),
+          Expanded(
+            child: filteredWords.isEmpty
+                ? const Center(child: Text('No matching words found'))
+                : ListView.builder(
+                    itemCount: filteredWords.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredWords[index];
+                      final realIndex = wordList.indexOf(item);
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.indigo.shade100,
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: Colors.indigo.shade900,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          item.word,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.meaning),
+                            const SizedBox(height: 2),
+                            Text(item.translation),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () =>
+                                  _showWordDialog(index: realIndex),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _showDeleteDialog(realIndex),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'words_list_add_fab',
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
-        onPressed: () => _showAddingDialog(),
-        child: Icon(Icons.add),
+        onPressed: () => _showWordDialog(),
+        child: const Icon(Icons.add),
       ),
     );
   }
 
-  void _showEditDialog(int index) {
-    TextEditingController wordController = TextEditingController(
-      text: wordList[index].word,
+  void _showWordDialog({int? index}) {
+    final isEditing = index != null;
+    final wordController = TextEditingController(
+      text: isEditing ? wordList[index].word : '',
     );
-    TextEditingController meaningController = TextEditingController(
-      text: wordList[index].meaning,
+    final meaningController = TextEditingController(
+      text: isEditing ? wordList[index].meaning : '',
     );
-    TextEditingController translationController = TextEditingController(
-      text: wordList[index].translation,
+    final translationController = TextEditingController(
+      text: isEditing ? wordList[index].translation : '',
     );
 
     showDialog(
@@ -107,40 +183,72 @@ class _WordsListScreenState extends State<WordsListScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
           ),
-          title: Text('Edit Item'),
+          title: Text(isEditing ? 'Edit Item' : 'Add Item'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: wordController,
-                decoration: InputDecoration(labelText: 'Word'),
+                decoration: const InputDecoration(labelText: 'Word'),
               ),
               TextField(
                 controller: meaningController,
-                decoration: InputDecoration(labelText: 'Meaning'),
+                decoration: const InputDecoration(labelText: 'Meaning'),
               ),
               TextField(
                 controller: translationController,
-                decoration: InputDecoration(labelText: 'Translation'),
+                decoration: const InputDecoration(labelText: 'Translation'),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
               onPressed: () {
+                final wordText = wordController.text.trim();
+                if (wordText.isEmpty) return;
+
+                final isDuplicate = wordList.asMap().entries.any(
+                  (entry) =>
+                      entry.key != index &&
+                      entry.value.word.trim().toLowerCase() ==
+                          wordText.toLowerCase(),
+                );
+
+                if (isDuplicate) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '"$wordText" already exists in your dictionary',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
                 setState(() {
-                  wordList[index].word = wordController.text;
-                  wordList[index].meaning = meaningController.text;
-                  wordList[index].translation = translationController.text;
+                  if (isEditing) {
+                    wordList[index].word = wordText;
+                    wordList[index].meaning = meaningController.text.trim();
+                    wordList[index].translation = translationController.text
+                        .trim();
+                  } else {
+                    wordList.add(
+                      TaskModel(
+                        word: wordText,
+                        meaning: meaningController.text.trim(),
+                        translation: translationController.text.trim(),
+                      ),
+                    );
+                  }
                 });
                 Navigator.pop(context);
               },
-              child: Text('Save', style: TextStyle(color: Colors.white)),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -157,80 +265,23 @@ class _WordsListScreenState extends State<WordsListScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
           ),
-          title: Text('Delete Confirmation'),
-          content: Text('Are you sure you want to delete this item?'),
+          title: const Text('Delete Confirmation'),
+          content: const Text('Are you sure you want to delete this item?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () {
-                setState(() {
-                  wordList.removeAt(index);
-                });
+                setState(() => wordList.removeAt(index));
                 Navigator.pop(context);
               },
-              child: Text('Delete', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showAddingDialog() {
-    TextEditingController wordController = TextEditingController();
-    TextEditingController meaningController = TextEditingController();
-    TextEditingController translationController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 245, 248, 250),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
-          ),
-          title: Text('Add Item'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: wordController,
-                decoration: InputDecoration(labelText: 'Word'),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.white),
               ),
-              TextField(
-                controller: meaningController,
-                decoration: InputDecoration(labelText: 'Meaning'),
-              ),
-              TextField(
-                controller: translationController,
-                decoration: InputDecoration(labelText: 'Translation'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
-              onPressed: () {
-                setState(() {
-                  wordList.add(
-                    TaskModel(
-                      word: wordController.text,
-                      meaning: meaningController.text,
-                      translation: translationController.text,
-                    ),
-                  );
-                });
-                Navigator.pop(context);
-              },
-              child: Text('Save', style: TextStyle(color: Colors.white)),
             ),
           ],
         );

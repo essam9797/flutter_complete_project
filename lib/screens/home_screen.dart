@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_3/models/task_model.dart';
 import 'package:flutter_application_3/screens/word_list_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_application_3/screens/quiz_words.dart';
-//import 'word_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,6 +10,7 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
@@ -21,8 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: _screens[_currentIndex],
       floatingActionButton: FloatingActionButton(
+        heroTag: 'home_quick_actions_fab',
         backgroundColor: Colors.indigo,
         elevation: 6.h,
         onPressed: () {
@@ -43,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 icon: Icon(
                   Icons.home,
-                  color: _currentIndex == 0 ? Colors.indigo :Colors.grey,
+                  color: _currentIndex == 0 ? Colors.indigo : Colors.grey,
                 ),
                 onPressed: () => setState(() => _currentIndex = 0),
               ),
@@ -56,25 +59,34 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               SizedBox(width: 40.w),
               IconButton(
-                icon: Icon(
-                  Icons.quiz, color: Colors.grey,
-                ),
+                icon: Icon(Icons.quiz, color: Colors.grey),
                 onPressed: () {
                   Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const QuizWords(source: QuizSource.demo),
-                        ), 
-                      );
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => QuizWords(
+                        source: QuizSource.demo,
+                        onSaveWord: (word) {
+                          final normalizedWord = word.word.trim().toLowerCase();
+                          final exists = WordsListScreen.dictionaryWords.any(
+                            (item) =>
+                                item.word.trim().toLowerCase() ==
+                                normalizedWord,
+                          );
+                          if (exists) {
+                            return false;
+                          }
+                          WordsListScreen.dictionaryWords.add(word);
+                          return true;
+                        },
+                      ),
+                    ),
+                  );
                 },
               ),
               IconButton(
-                icon: Icon(
-                  Icons.person, color: Colors.grey,
-                ),
-                onPressed: (){
-
-                },
+                icon: Icon(Icons.person, color: Colors.grey),
+                onPressed: () {},
               ),
             ],
           ),
@@ -84,12 +96,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showQuickActionSheet(BuildContext context) {
+    final nav = Navigator.of(context);
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return Container(
           padding: EdgeInsets.all(20.r),
           child: Column(
@@ -101,34 +114,28 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               SizedBox(height: 16.h),
               ListTile(
-                leading: Icon(
-                  Icons.add_circle, color: Colors.indigo,
-                ),
-                title: Text(
-                  'Add a new word quickly'
-                ),
+                leading: Icon(Icons.add_circle, color: Colors.indigo),
+                title: Text('Add a new word quickly'),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
+                  Navigator.pop(sheetContext);
+                  nav.push(
                     MaterialPageRoute(
-                      builder: (context) => const WordsListScreen()),
+                      builder: (context) => const WordsListScreen(),
+                    ),
                   );
                 },
               ),
               ListTile(
-                leading: Icon(
-                  Icons.quiz, color: Colors.teal,
-                ),
-                title: Text(
-                  'Start a quick test'
-                ),
+                leading: Icon(Icons.quiz, color: Colors.teal),
+                title: Text('Start a quick test'),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
+                  Navigator.pop(sheetContext);
+                  nav.push(
                     MaterialPageRoute(
-                      builder: (context) => const QuizWords(source: QuizSource.demo),
+                      builder: (context) => QuizWords(
+                        source: QuizSource.dictionary,
+                        dictionaryWords: WordsListScreen.dictionaryWords,
+                      ),
                     ),
                   );
                 },
@@ -147,6 +154,7 @@ class HomeDashboardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(
           'Refresh Your Mind 🧠',
