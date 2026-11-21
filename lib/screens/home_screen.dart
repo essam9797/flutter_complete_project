@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_3/models/task_model.dart';
 import 'package:flutter_application_3/screens/word_list_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_application_3/screens/quiz_words.dart';
+import 'package:flutter_application_3/screens/setting_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     const HomeDashboardContent(),
     const WordsListScreen(),
+    const SettingScreen(),
   ];
 
   @override
@@ -85,8 +86,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               IconButton(
-                icon: Icon(Icons.person, color: Colors.grey),
-                onPressed: () {},
+                icon: Icon(
+                  Icons.person,
+                  color: _currentIndex == 2 ? Colors.indigo : Colors.grey,
+                ),
+                onPressed: () => setState(() => _currentIndex = 2),
               ),
             ],
           ),
@@ -212,10 +216,4 @@ class HomeDashboardContent extends StatelessWidget {
       ),
     );
   }
-<<<<<<< HEAD
 }
-
-
-=======
-}
->>>>>>> 6a5fdc5ed91f0016cdf98b3806788e0b03e6b445

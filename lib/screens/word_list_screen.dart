@@ -8,7 +8,8 @@ class WordsListScreen extends StatefulWidget {
   static final List<TaskModel> dictionaryWords = [
     TaskModel(
       word: 'Short',
-      meaning: 'small in length, height, or duration (time), or not having enough of something',
+      meaning:
+          'small in length, height, or duration (time), or not having enough of something',
       translation: 'قصير',
     ),
   ];
@@ -23,10 +24,57 @@ class _WordsListScreenState extends State<WordsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  bool _canUndo = false;
+  TaskModel? _lastBackupWord;
+  int? _lastBackupIndex;
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _saveBackup({required int index, required TaskModel word}) {
+    _lastBackupIndex = index;
+    _lastBackupWord = TaskModel(
+      word: word.word,
+      meaning: word.meaning,
+      translation: word.translation,
+    );
+    _canUndo = true;
+  }
+
+  void _handleUndo() {
+    if (!_canUndo || _lastBackupWord == null || _lastBackupIndex == null) {
+      return;
+    }
+
+    final restoredWord = TaskModel(
+      word: _lastBackupWord!.word,
+      meaning: _lastBackupWord!.meaning,
+      translation: _lastBackupWord!.translation,
+    );
+    final targetIndex = _lastBackupIndex!.clamp(0, wordList.length);
+
+    setState(() {
+      if (targetIndex < wordList.length &&
+          wordList[targetIndex].word.trim().toLowerCase() ==
+              restoredWord.word.trim().toLowerCase()) {
+        wordList[targetIndex] = restoredWord;
+      } else {
+        wordList.insert(targetIndex, restoredWord);
+      }
+      _canUndo = false;
+      _lastBackupWord = null;
+      _lastBackupIndex = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Restored "${restoredWord.word}"'),
+        duration: const Duration(milliseconds: 800),
+      ),
+    );
   }
 
   @override
@@ -56,6 +104,14 @@ class _WordsListScreenState extends State<WordsListScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(16.r)),
         ),
+        actions: [
+          if (_canUndo)
+            IconButton(
+              tooltip: 'Undo',
+              icon: Icon(Icons.undo, color: Colors.indigo, size: 24.sp),
+              onPressed: _handleUndo,
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -138,8 +194,7 @@ class _WordsListScreenState extends State<WordsListScreen> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () =>
-                                  _showWordDialog(index: realIndex),
+                              onPressed: () => _showWordDialog(index: realIndex),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
@@ -232,6 +287,7 @@ class _WordsListScreenState extends State<WordsListScreen> {
 
                 setState(() {
                   if (isEditing) {
+                    _saveBackup(index: index, word: wordList[index]);
                     wordList[index].word = wordText;
                     wordList[index].meaning = meaningController.text.trim();
                     wordList[index].translation = translationController.text
@@ -275,7 +331,10 @@ class _WordsListScreenState extends State<WordsListScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () {
-                setState(() => wordList.removeAt(index));
+                setState(() {
+                  _saveBackup(index: index, word: wordList[index]);
+                  wordList.removeAt(index);
+                });
                 Navigator.pop(context);
               },
               child: const Text(
